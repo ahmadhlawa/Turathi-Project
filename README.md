@@ -1,11 +1,17 @@
-<div align="center">
+# Turath Digital (تراثي الرقمي)
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A Palestinian cultural heritage protection platform powered by AI.
 
-  <h1>Built with AI Studio</h2>
+## Setup Instructions
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+1. Retrieve a Gemini API Key from Google AI Studio.
+2. The AI Studio environment automatically handles environment variables. Set `GEMINI_API_KEY` via the AI Studio visual interface (settings).
+3. The Fullstack app runs locally utilizing the single endpoint with Vite. Running `npm run dev` kicks off `server.ts` seamlessly natively without manual split frontend/backend terminals.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Description
 
-</div>
+This platform provides:
+- **Pattern Analyzer**: Intelligent analysis of traditional Palestinian tatreez (embroidery) patterns, establishing geographical origins using Gemini 2.0 Vision. 
+- **Truth Guard**: An interactive archivist agent protecting the authentic Palestinian narrative through verifiable historical records.
+
+The interface incorporates a custom glass-morphism (Frosted Glass) tailored Tailwind CSS design.
