@@ -20,10 +20,17 @@ export default function TruthGuard() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      // Use scrollTop instead of scrollIntoView to prevent the whole browser window from jumping down
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   useEffect(() => {
@@ -39,15 +46,10 @@ export default function TruthGuard() {
     setIsLoading(true);
 
     try {
-      // Pass the previous messages, without the newly added one
-      const historyMsg = messages
-        .filter(m => m.id !== 'welcome')
-        .map(m => ({ role: m.role, text: m.text }));
-
       const response = await fetch('/api/truth-guard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: textToSend, history: historyMsg })
+        body: JSON.stringify({ message: textToSend })
       });
 
       if (!response.ok) {
@@ -60,8 +62,7 @@ export default function TruthGuard() {
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'bot',
-        text: data.reply,
-        sources: data.sources
+        text: data.reply
       };
 
       setMessages(prev => [...prev, botMsg]);
@@ -96,7 +97,7 @@ export default function TruthGuard() {
         <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] overflow-hidden shadow-2xl flex flex-col font-cairo">
           
           {/* Messages Area */}
-          <div className="h-[500px] overflow-y-auto p-6 space-y-6 flex flex-col">
+          <div ref={messagesContainerRef} className="h-[500px] overflow-y-auto p-6 space-y-6 flex flex-col">
             {messages.map((msg) => (
               <motion.div 
                 key={msg.id}
@@ -114,22 +115,6 @@ export default function TruthGuard() {
                   <div className={`p-4 rounded-[16px] ${msg.role === 'user' ? 'bg-olive-500 border border-olive-400 text-white rounded-tr-none' : 'bg-bg-raised border border-bg-overlay text-text-secondary rounded-tl-none'}`}>
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                   </div>
-                  
-                  {/* Sources Box */}
-                  {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 w-full bg-bg-deep border-r-4 border-r-olive-500 rounded-[8px] p-4 shadow-inner">
-                      <p className="text-xs text-text-muted mb-2 flex items-center gap-2 font-bold font-cairo">
-                        <span>📚</span> المراجع الموثقة:
-                      </p>
-                      <div className="flex flex-col gap-1">
-                        {msg.sources.map((source, idx) => (
-                          <span key={idx} className="text-xs text-text-secondary leading-relaxed border-b border-bg-overlay pb-1 last:border-0 last:pb-0 font-cairo">
-                            {source.replace('المصدر', '').replace(':', '').trim()}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </motion.div>
             ))}
@@ -146,7 +131,6 @@ export default function TruthGuard() {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Replies */}

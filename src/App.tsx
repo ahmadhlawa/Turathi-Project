@@ -3,24 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import PatternScanner from './components/PatternScanner';
-import TruthGuard from './components/TruthGuard';
+import Home from './pages/Home';
+import MapPage from './pages/MapPage';
 import Footer from './components/Footer';
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col font-cairo bg-bg-base text-text-primary">
-      <Navbar />
-      
-      <main className="flex-1">
-        <Hero />
-        <PatternScanner />
-        <TruthGuard />
-      </main>
+    <BrowserRouter>
+      <div className="min-h-screen flex flex-col font-cairo bg-bg-base text-text-primary">
+        <Navbar />
+        
+        <main className="flex-1 mt-16">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/map" element={<MapPage />} />
+          </Routes>
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </BrowserRouter>
   );
 }

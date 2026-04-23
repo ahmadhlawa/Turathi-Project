@@ -2,6 +2,12 @@ import { useState, useRef } from 'react';
 import { Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
+declare global {
+  interface Window {
+    tmImage: any;
+  }
+}
+
 type ScanStatus = 'idle' | 'selected' | 'scanning' | 'complete' | 'error';
 
 interface ScanResult {
@@ -16,11 +22,11 @@ interface ScanResult {
 export default function PatternScanner() {
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [mimeType, setMimeType] = useState<string>('');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,7 +38,6 @@ export default function PatternScanner() {
       return;
     }
 
-    setMimeType(file.type);
     const reader = new FileReader();
     reader.onload = (event) => {
       setImageSrc(event.target?.result as string);
@@ -43,16 +48,40 @@ export default function PatternScanner() {
   };
 
   const startScan = async () => {
-    if (!imageSrc) return;
+    if (!imageSrc || !imageRef.current) return;
     setStatus('scanning');
     
     try {
-      const base64Data = imageSrc.split(',')[1];
+      // 1. Load Teachable Machine Model
+      const URL = "https://teachablemachine.withgoogle.com/models/DV5JcaVPW/";
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
+
+      if (!window.tmImage) {
+        throw new Error("لم يتم تحميل مكتبة تحليل الصور، تأكد من الاتصال بالانترنت.");
+      }
+
+      const model = await window.tmImage.load(modelURL, metadataURL);
       
+      // 2. Predict
+      const predictions = await model.predict(imageRef.current);
+      if (!predictions || predictions.length === 0) {
+          throw new Error("فشل الموديل في تحليل الصورة");
+      }
+
+      // Get top prediction
+      const topPrediction = predictions.reduce((prev: any, current: any) => 
+        (prev.probability > current.probability) ? prev : current
+      );
+
+      // 3. Send top prediction to Groq to generate explanatory details
       const response = await fetch('/api/scan-pattern', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64Data, mimeType })
+        body: JSON.stringify({ 
+          className: topPrediction.className,
+          probability: topPrediction.probability 
+        })
       });
 
       if (!response.ok) {
@@ -84,8 +113,8 @@ export default function PatternScanner() {
           <div>
             <h3 className="text-2xl font-bold mb-4 font-amiri text-olive-500">التحقق الذكي من التطريز</h3>
             <p className="text-text-secondary leading-relaxed text-lg">
-              ارفع صورة لقطعة تطريز فلسطيني، وسيقوم نظام الذكاء الاصطناعي "Gemini 2.0" بتحليلها 
-              لتحديد الأصل الجغرافي، نوع الغرزة، والمعاني الرمزية للأنماط لحمايتها من التزوير.
+              ارفع صورة لقطعة تطريز، وسيقوم نظام التحقق الذكي بتحليلها ومطابقتها 
+              لتحديد الأصل الجغرافي، نوع الغرزة، والمعاني الرمزية للأنماط لحمايتها من التزوير الثقافي.
             </p>
           </div>
 
@@ -155,9 +184,11 @@ export default function PatternScanner() {
 
           {imageSrc && (
             <img 
+              ref={imageRef}
               src={imageSrc} 
               alt="Scan preview" 
-              className="w-full h-full object-cover opacity-100 relative z-10 rounded-[16px]"
+              crossOrigin="anonymous"
+              className={`w-full h-full object-cover relative z-10 rounded-[16px] transition-all duration-700 ${status === 'scanning' ? 'opacity-60 scale-105 blur-[2px]' : 'opacity-100 scale-100 blur-0'}`}
             />
           )}
 
