@@ -20,7 +20,7 @@ export default function MapPage() {
         {/* Iframe */}
         <div className="w-full h-full bg-slate-100 flex-1 relative z-0">
           <iframe 
-            src="https://palopenmaps.org/ar/maps/abu-rqayiq?basemap=pal20k1940&overlay=pal1940&color=status&toggles=places|year" 
+            src="https://palopenmaps.org/ar/maps/ramallah?basemap=pal20k1940&overlay=pal1940&color=status&toggles=places|year|split#14.00,35.1961,31.9043" 
             title="Palestine Open Maps"
             className="w-full h-[calc(100vh-4rem)] border-none"
             allowFullScreen

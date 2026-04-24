@@ -13,19 +13,22 @@ export default function Navbar() {
       className="fixed top-0 w-full h-16 glass z-50 flex items-center justify-between px-8"
     >
       <div className="flex items-center gap-3">
-        <Link to="/" className="w-10 h-10 bg-olive-500 rounded-lg flex items-center justify-center olive-glow">
-          <Shield className="w-6 h-6 text-white" />
-        </Link>
-        <Link to="/" className="text-xl font-bold tracking-tight font-amiri text-text-primary">
-          تراثي الرقمي <span className="text-xs font-cairo font-light opacity-50 mr-2 text-text-secondary">TURATH DIGITAL</span>
+        <Link to="/" className="flex items-center justify-center">
+          <img 
+            src="/Logo-Turathi.jpeg" 
+            alt="شعار تراثي" 
+            className="h-12 w-auto max-w-[140px] object-contain rounded-md" 
+          />
         </Link>
       </div>
 
       <div className="hidden md:flex gap-8 text-sm font-bold text-text-secondary">
         <Link to="/" className="hover:text-olive-500 transition-colors">الرئيسية</Link>
-        {isHome && <a href="#scanner" className="hover:text-olive-500 transition-colors">فحص الأنماط</a>}
-        {isHome && <a href="#truth-guard" className="hover:text-olive-500 transition-colors">حارس الحقيقة</a>}
-        <Link to="/map" className="hover:text-olive-500 transition-colors text-tatreez-400">خريطة فلسطين التاريخية</Link>
+        <Link to="/explore" className="hover:text-olive-500 transition-colors">المجموعة التراثية</Link>
+        <Link to="/proverbs" className="hover:text-olive-500 transition-colors">الأمثال الفلسطينية</Link>
+        {isHome && <a href="#scanner" className="hover:text-olive-500 transition-colors">فحص الأنماط (AI)</a>}
+        {isHome && <a href="#truth-guard" className="hover:text-olive-500 transition-colors">حارس الحقيقة (AI)</a>}
+        <Link to="/map" className="hover:text-olive-500 transition-colors text-tatreez-400">الخريطة التاريخية</Link>
       </div>
 
       <div>

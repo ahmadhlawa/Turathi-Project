@@ -1,0 +1,513 @@
+/* 
+  Custom CSS for the new highly-polished "Turathi" interface components.
+  This file specifically avoids relying on Tailwind to meet the architectural requirement 
+  while establishing a premium, professional startup look and feel.
+*/
+
+:root {
+  --turathi-primary: #526f4f;
+  --turathi-primary-dark: #3e533c;
+  --turathi-accent: #8b2b38; /* Tatreez Red */
+  --turathi-bg: #f9f9faf0;
+  --turathi-surface: #ffffff;
+  --turathi-text: #2c3e50;
+  --turathi-text-light: #7f8c8d;
+  --turathi-border: #eef2eb;
+  --turathi-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --turathi-shadow-hover: 0 16px 40px rgba(82, 111, 79, 0.15);
+  --turathi-radius: 12px;
+}
+
+/* Custom Base for specific pages container */
+.turathi-custom-ui {
+  direction: rtl;
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--turathi-bg);
+  color: var(--turathi-text);
+  min-height: 100vh;
+}
+
+.turathi-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* --- Hero Section --- */
+.turathi-hero {
+  position: relative;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1549704207-6c841fed6685?q=80&w=1600&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: white;
+  padding: 100px 20px;
+  margin-bottom: 60px;
+  overflow: hidden;
+}
+
+.turathi-hero-content {
+  max-width: 800px;
+  position: relative;
+  z-index: 2;
+  animation: turathiFadeInUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.turathi-hero-tag {
+  display: inline-block;
+  background-color: rgba(139, 43, 56, 0.8);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+}
+
+.turathi-hero h1 {
+  font-family: 'Amiri', serif;
+  font-size: 4rem;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.turathi-hero p {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  line-height: 1.8;
+  margin-bottom: 40px;
+}
+
+.turathi-primary-btn {
+  display: inline-block;
+  background-color: var(--turathi-primary);
+  color: white;
+  padding: 16px 40px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid var(--turathi-primary);
+  cursor: pointer;
+}
+
+.turathi-primary-btn:hover {
+  background-color: transparent;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(82, 111, 79, 0.3);
+}
+
+/* --- Section Headers --- */
+.turathi-section-header {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.turathi-section-header h2 {
+  font-family: 'Amiri', serif;
+  font-size: 2.5rem;
+  color: var(--turathi-primary);
+  margin: 0;
+}
+.turathi-section-header p {
+  color: var(--turathi-text-light);
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* --- Grid & Cards --- */
+.turathi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 30px;
+  padding-bottom: 20px;
+}
+
+.turathi-card {
+  background: var(--turathi-surface);
+  border-radius: var(--turathi-radius);
+  overflow: hidden;
+  box-shadow: var(--turathi-shadow);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--turathi-border);
+  position: relative;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+}
+
+.turathi-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--turathi-shadow-hover);
+}
+
+.turathi-card-img-wrapper {
+  height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+
+.turathi-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.turathi-card:hover .turathi-card-img {
+  transform: scale(1.08);
+}
+
+.turathi-card-city-badge {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(44, 62, 80, 0.85);
+  backdrop-filter: blur(4px);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.turathi-card-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.turathi-card-category {
+  color: var(--turathi-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.turathi-card-title {
+  font-family: 'Amiri', serif;
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+  color: var(--turathi-text);
+  margin-top: 0;
+}
+
+.turathi-card-desc {
+  color: var(--turathi-text-light);
+  line-height: 1.6;
+  font-size: 0.95rem;
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.turathi-card-footer {
+  border-top: 1px solid var(--turathi-border);
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.turathi-link-text {
+  color: var(--turathi-primary);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* --- Item Details Page --- */
+.turathi-details-wrapper {
+  padding: 40px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.turathi-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--turathi-text-light);
+  text-decoration: none;
+  font-weight: 700;
+  margin-bottom: 30px;
+  transition: color 0.3s ease;
+}
+
+.turathi-back-btn:hover {
+  color: var(--turathi-primary);
+}
+
+.turathi-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  background: var(--turathi-surface);
+  border-radius: var(--turathi-radius);
+  box-shadow: var(--turathi-shadow);
+  overflow: hidden;
+}
+
+@media (max-width: 800px) {
+  .turathi-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.turathi-details-img {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  object-fit: cover;
+}
+
+.turathi-details-content {
+  padding: 40px;
+}
+
+.turathi-details-title {
+  font-family: 'Amiri', serif;
+  font-size: 2.5rem;
+  color: var(--turathi-primary);
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.turathi-details-tags {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.turathi-tag {
+  background: var(--turathi-border);
+  color: var(--turathi-text);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.turathi-details-text {
+  line-height: 1.8;
+  color: var(--turathi-text);
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+}
+
+/* AI Insight Box */
+.turathi-ai-insight {
+  background: linear-gradient(135deg, #f0f7f0 0%, #e6f2e6 100%);
+  border: 1px solid rgba(82, 111, 79, 0.2);
+  border-right: 4px solid var(--turathi-primary);
+  padding: 24px;
+  border-radius: 8px;
+  margin-top: 30px;
+}
+
+.turathi-ai-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--turathi-primary);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.turathi-ai-insight p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--turathi-text);
+}
+
+/* Animations */
+@keyframes turathiFadeInUp {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Forms & Filters */
+.turathi-filters-bar {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  background: var(--turathi-surface);
+  padding: 20px;
+  border-radius: var(--turathi-radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.turathi-input {
+  flex: 1;
+  padding: 14px 20px;
+  border: 1px solid var(--turathi-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.turathi-input:focus {
+  border-color: var(--turathi-primary);
+}
+
+.turathi-select {
+  padding: 14px 20px;
+  border: 1px solid var(--turathi-border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: white;
+  min-width: 200px;
+  outline: none;
+}
+
+/* --- Proverbs Specific --- */
+.turathi-proverb-card {
+  background: var(--turathi-surface);
+  border-radius: var(--turathi-radius);
+  padding: 24px;
+  box-shadow: var(--turathi-shadow);
+  border: 1px solid var(--turathi-border);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.turathi-proverb-card:hover {
+  box-shadow: var(--turathi-shadow-hover);
+  transform: translateY(-5px);
+}
+
+.turathi-proverb-text {
+  font-family: 'Amiri', serif;
+  font-size: 1.6rem;
+  color: var(--turathi-primary-dark);
+  line-height: 1.5;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.turathi-proverb-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  border-top: 1px solid var(--turathi-border);
+  padding-top: 20px;
+}
+
+.turathi-action-btn {
+  flex: 1;
+  background: var(--turathi-bg);
+  color: var(--turathi-text);
+  border: 1px solid var(--turathi-border);
+  padding: 10px;
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.turathi-action-btn:hover:not(:disabled) {
+  background: var(--turathi-primary);
+  color: white;
+  border-color: var(--turathi-primary);
+}
+
+.turathi-action-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.turathi-action-btn.active {
+  background: var(--turathi-primary);
+  color: white;
+  border-color: var(--turathi-primary);
+}
+
+.turathi-ai-result {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fdfbf7;
+  border-radius: 8px;
+  border-right: 4px solid var(--turathi-accent);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--turathi-text);
+}
+
+.turathi-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: currentColor;
+  animation: turathiSpin 1s ease-in-out infinite;
+}
+
+@keyframes turathiSpin {
+  to { transform: rotate(360deg); }
+}
+
+.turathi-proverb-chatbot {
+  background: var(--turathi-surface);
+  border-radius: var(--turathi-radius);
+  padding: 24px;
+  box-shadow: var(--turathi-shadow);
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.turathi-proverb-chatbot input {
+  flex: 1;
+  padding: 16px 20px;
+  border: 2px solid var(--turathi-border);
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.turathi-proverb-chatbot input:focus {
+  border-color: var(--turathi-primary);
+}
+
+.turathi-proverb-chatbot button {
+  padding: 16px 32px;
+  border-radius: 50px;
+  background: var(--turathi-primary);
+  color: white;
+  border: none;
+  font-weight: bold;
+  font-family: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.turathi-proverb-chatbot button:hover {
+  background: var(--turathi-primary-dark);
+}

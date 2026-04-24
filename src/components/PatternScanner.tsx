@@ -74,6 +74,11 @@ export default function PatternScanner() {
         (prev.probability > current.probability) ? prev : current
       );
 
+      // Threshold check: Prevent false positives for unrelated images
+      if (topPrediction.probability < 0.65) {
+        throw new Error("عذراً، لم أتمكن من التعرف على هذا النمط كقطعة تراث فلسطينية. يرجى تجربة صورة أوضح أو لقطعة أخرى.");
+      }
+
       // 3. Send top prediction to Groq to generate explanatory details
       const response = await fetch('/api/scan-pattern', {
         method: 'POST',
@@ -100,25 +105,25 @@ export default function PatternScanner() {
   };
 
   return (
-    <section id="scanner" className="py-24 px-6 relative z-10 w-full max-w-7xl mx-auto">
-      <div className="flex items-center gap-4 mb-12">
+    <section id="scanner" className="min-h-[100dvh] pt-24 pb-8 px-6 flex flex-col justify-center items-center relative z-10 w-full max-w-7xl mx-auto bg-bg-base snap-start">
+      <div className="flex items-center gap-4 mb-8 w-full">
         <div className="w-1.5 h-10 bg-olive-500 rounded-full" />
         <h2 className="text-4xl font-bold font-amiri text-text-primary">محلل الأنماط التراثية</h2>
       </div>
 
-      <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] p-8 grid grid-cols-1 lg:grid-cols-2 gap-12 shadow-2xl relative overflow-hidden">
+      <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 shadow-2xl relative overflow-hidden w-full">
         
         {/* Right Column (Controls) */}
-        <div className="flex flex-col justify-center space-y-8 relative z-20">
+        <div className="flex flex-col justify-center space-y-6 relative z-20">
           <div>
-            <h3 className="text-2xl font-bold mb-4 font-amiri text-olive-500">التحقق الذكي من التطريز</h3>
-            <p className="text-text-secondary leading-relaxed text-lg">
+            <h3 className="text-2xl font-bold mb-3 font-amiri text-olive-500">التحقق الذكي من التطريز</h3>
+            <p className="text-text-secondary leading-relaxed text-[15px]">
               ارفع صورة لقطعة تطريز، وسيقوم نظام التحقق الذكي بتحليلها ومطابقتها 
               لتحديد الأصل الجغرافي، نوع الغرزة، والمعاني الرمزية للأنماط لحمايتها من التزوير الثقافي.
             </p>
           </div>
 
-          <div className="space-y-4 font-cairo">
+          <div className="space-y-3 font-cairo">
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -129,7 +134,7 @@ export default function PatternScanner() {
             
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-4 border border-dashed border-olive-500/40 hover:bg-olive-500/10 rounded-[8px] flex items-center justify-center gap-3 text-text-secondary hover:text-text-primary transition-all bg-bg-base"
+              className="w-full py-3 border border-dashed border-olive-500/40 hover:bg-olive-500/10 rounded-[8px] flex items-center justify-center gap-3 text-text-secondary hover:text-text-primary transition-all bg-bg-base"
             >
               <Upload className="w-5 h-5 text-olive-500" />
               <span className="font-bold">اختر صورة من جهازك</span>
@@ -138,7 +143,7 @@ export default function PatternScanner() {
             <button
               onClick={startScan}
               disabled={status === 'scanning' || status === 'idle'}
-              className={`w-full py-4 rounded-[8px] font-bold text-lg transition-all flex items-center justify-center gap-2
+              className={`w-full py-3 rounded-[8px] font-bold text-[15px] transition-all flex items-center justify-center gap-2
                 ${(status === 'idle') ? 'bg-bg-raised text-text-muted cursor-not-allowed border border-bg-overlay' : ''}
                 ${status === 'selected' || status === 'error' || status === 'complete' ? 'bg-olive-500 text-white olive-glow hover:bg-olive-400' : ''}
                 ${status === 'scanning' ? 'bg-olive-400 text-white cursor-wait relative overflow-hidden' : ''}
@@ -195,7 +200,17 @@ export default function PatternScanner() {
           {/* Scanning Overlay Animations */}
           {status === 'scanning' && (
             <>
-              <div className="laser-line z-20" />
+              <motion.div 
+                className="laser-line z-20"
+                initial={{ top: '10%' }}
+                animate={{ top: '90%' }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "linear",
+                  repeatType: "reverse"
+                }}
+              />
               {/* Corner brackets */}
               <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-tatreez-400 z-20 animate-pulse" />
               <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-tatreez-400 z-20 animate-pulse" />
@@ -237,8 +252,15 @@ export default function PatternScanner() {
                   <span className="text-text-primary">{result.patterns}</span>
                 </div>
                 <div className="pt-2">
-                  <p className="text-text-secondary italic mb-3">"{result.details}"</p>
-                  <div className="flex items-center gap-4">
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5, duration: 1.5 }}
+                    className="text-text-secondary italic mb-3 leading-relaxed"
+                  >
+                    "{result.details}"
+                  </motion.p>
+                  <div className="flex items-center gap-4 mt-4">
                     <span className="text-text-muted text-sm border-olive-500/20">مستوى الثقة:</span>
                     <div className="flex-1 h-2 bg-bg-raised rounded-full overflow-hidden">
                       <motion.div 

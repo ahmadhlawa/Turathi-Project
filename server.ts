@@ -37,27 +37,19 @@ async function startServer() {
       }
 
       const promptText = `أنت خبير أكاديمي محترف في التراث الفلسطيني وفن التطريز.
-قام نموذج ذكاء اصطناعي (Teachable Machine) مخصص بتحليل صورة لثوب، وقد صنفه على أنه "${className}" بنسبة يقين تعادل ${Math.round(probability * 100)}%.
+قام نموذج ذكاء اصطناعي مخصص بتصنيف صورة هذا الثوب على أنه "${className}" بنسبة يقين تعادل ${Math.round(probability * 100)}%.
 
-اليك القواعد التالية حول الفروقات بين الأثواب:
-يكمن الفرق الجوهري بين التطريز الفلسطيني والأردني في الأنماط والرموز؛ فالتطريز الفلسطيني (كـثوب بئر السبع أو رام الله) يتميز بألوان زاهية ونقوش مستوحاة من البيئة (أشجار، طيور، أزهار) بخيوط الحرير والقصب، بينما يميل التطريز الأردني (مثل المدرقة الأردنية) إلى الزخارف الهندسية المعقدة، واللون الأحمر النبيذي أو الألوان الداكنة، بتصاميم تعكس التراث البدوي والحضري.
+المطلوب منك ليس شرح سبب التصنيف أو القواعد، بل تقديم **وصف ثقافي وتاريخي عام وجميل** لهذا الثوب المحدد بناءً على تصنيفه (${className}). اكتب في الـ details فقرة متماسكة ومثرية تشرح للمستخدم مميزات هذا الثوب، تاريخه، وماذا يمثل في الثقافة الفلسطينية بشكل عام.
 
-فيما يلي الفرق بين التطريز الفلسطيني في أبرز المدن والمناطق الفلسطينية:
-1. القدس ورام الله: الأناقة، خيوط حرير بألوان زاهية، يسود اللون الأحمر النبيذي (العنابي) مع أخضر وأزرق وأصفر. زخارف تعكس البيئة النجمة، الزيتون.
-2. بيت لحم: "ثوب الملك"، مخمل، تطريز كثيف بخيوط الحرير والذهب.
-3. الخليل والجنوب (بئر السبع): جرأة وقوة، أحمر برتقالي ممزوج بأزرق غامق، زخارف هندسية قوية.
-4. غزة والساحل: أقمشة خفيفة، لون أزرق شائع وأحمر داكن وأرجواني، دمج زخارف بحرية.
-5. الشمال (يافا، طولكرم، نابلس): ألوان مفتوحة، خيوط حرير فاتحة، الثوب المردن بشيفون وألوان فاتحة وقفطان مخمل.
-
-بناءً على تصنيف الموديل (${className})، قم بكتابة تفاصيل علمية دقيقة تصف هذا الثوب وصبه في مخرجات JSON التالية:
+بناءً على هذا التصنيف، قم بتعبئة مخرجات JSON التالية:
 
 {
   "embroideryType": "${className}",
-  "origin": string, // اكتب المنطقة بناءً على فهمك للتصنيف
-  "patterns": string, // الأنماط والرموز التقريبية بناء على التصنيف، مثل النجمة لرام الله او الزجزاج للجنوب
+  "origin": string, // اكتب المنطقة أو المدينة التي ينتمي إليها هذا الثوب
+  "patterns": string, // الأنماط والرموز الجمالية التي يشتهر بها هذا النوع عادة
   "confidence": ${Math.round(probability * 100)},
   "verified": ${probability > 0.6},
-  "details": string // اشرح علمياً التطابق مع القواعد المذكورة ولماذا صنف هكذا
+  "details": string // الفقرة الثقافية والتاريخية المثرية التي تصف جماليات وتاريخ هذا الثوب
 }
 
 أجب بصيغة JSON فقط بدون أي نص خارج الـ JSON.`;
@@ -167,6 +159,106 @@ async function startServer() {
       }
       
       res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // --- PROVERBS API ---
+  const handleProverbAI = async (req: express.Request, res: express.Response, systemPrompt: string) => {
+    try {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY is not configured.' });
+      
+      const { proverb } = req.body;
+      if (!proverb) return res.status(400).json({ error: 'No proverb provided' });
+
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 300,
+          temperature: 0.3,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: proverb }
+          ]
+        })
+      });
+
+      if (!response.ok) throw new Error(`Groq Error: ${await response.text()}`);
+      
+      const data = await response.json();
+      res.json({ result: data.choices?.[0]?.message?.content?.trim() || '' });
+    } catch (error: any) {
+      console.error('Proverb AI Error:', error?.message || error);
+      res.status(500).json({ error: error?.message || 'Failed to process proverb' });
+    }
+  };
+
+  app.post('/api/proverb-meaning', (req, res) => {
+    handleProverbAI(req, res, "أنت خبير في التراث الفلسطيني. اشرح المثل الفلسطيني التالي بشكل بسيط وواضح في سطرين فقط وبدون مقدمات.");
+  });
+
+  app.post('/api/proverb-story', (req, res) => {
+    handleProverbAI(req, res, "أنت حكواتي فلسطيني. اكتب قصة قصيرة جداً (3-5 أسطر) من التراث القروي الفلسطيني تعبر عن هذا المثل. ابدأ بالقصة مباشرة دون مقدمات.");
+  });
+
+  app.post('/api/proverb-category', (req, res) => {
+    handleProverbAI(req, res, "صنف هذا المثل الفلسطيني إلى واحدة من هذه الفئات فقط (حكمة، صبر، علاقات، تربية، عمل، أمل). أجب بكلمة واحدة فقط تمثل الفئة وبدون أي نص إضافي.");
+  });
+
+  app.post('/api/proverb-chat', async (req, res) => {
+    try {
+      const apiKey = process.env.GROQ_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY is not configured.' });
+      
+      const { prompt } = req.body;
+      if (!prompt) return res.status(400).json({ error: 'No prompt provided' });
+
+      const systemPrompt = `أنت مساعد ذكي فلسطيني تراثي. تخصصك الوحيد والأوحد هو "الأمثال الشعبية الفلسطينية".
+التعليمات الصارمة: 
+1. يُمنع منعاً باتاً الإجابة على أي سؤال أو نقاش لا يتعلق بالأمثال الفلسطينية أو التراث (مثل البرمجة، العلوم، السياسة الحالية، إلخ).
+2. إذا كان السؤال خارج نطاق الأمثال، ارفض بأدب وقل أنك مخصص للأمثال الشعبية الفلسطينية فقط وضع related: false.
+3. إذا سألك المستخدم (أعطني مثلاً عن الصبر/شخص/موقف)، استخرج مثلاً فلسطينياً حقيقياً مناسباً مع شرح قصير.
+
+أخرج الإجابة بصيغة JSON حصراً، بدون أي نص قبله أو بعده:
+{
+  "related": boolean, 
+  "proverb": "نص المثل إذا وجد أو اتركه فارغاً",
+  "explanation": "شرح المثل أو رسالة الرفض إن كان خارج النطاق"
+}`;
+
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 500,
+          temperature: 0.1,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+
+      if (!response.ok) throw new Error(`Groq Error: ${await response.text()}`);
+      
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '{}';
+      
+      let parsed;
+      try {
+        parsed = JSON.parse(content);
+      } catch(e) {
+        const match = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        parsed = JSON.parse(match ? match[1] : content);
+      }
+
+      res.json(parsed);
+    } catch (error: any) {
+      console.error('Proverb Chat Error:', error?.message || error);
+      res.status(500).json({ error: error?.message || 'Failed to process chat' });
     }
   });
 

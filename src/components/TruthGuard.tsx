@@ -86,18 +86,18 @@ export default function TruthGuard() {
   ];
 
   return (
-    <section id="truth-guard" className="py-24 px-6 bg-bg-deep border-y border-bg-overlay relative">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex flex-col items-center mb-10 text-center">
-          <Shield className="w-12 h-12 text-olive-500 mb-4" />
-          <h2 className="text-4xl font-bold mb-4 font-amiri text-text-primary">حارس الحقيقة الموثق</h2>
-          <p className="text-text-secondary font-cairo cursor-default">نظام حواري محمي لضمان دقة الرواية التاريخية الفلسطينية</p>
+    <section id="truth-guard" className="min-h-[100dvh] pt-24 pb-8 px-6 bg-bg-deep border-y border-bg-overlay relative flex flex-col justify-center snap-start">
+      <div className="max-w-3xl mx-auto w-full">
+        <div className="flex flex-col items-center mb-8 text-center">
+          <Shield className="w-12 h-12 text-olive-500 mb-3" />
+          <h2 className="text-4xl font-bold mb-3 font-amiri text-text-primary">حارس الحقيقة الموثق</h2>
+          <p className="text-text-secondary font-cairo cursor-default text-[15px]">نظام حواري محمي لضمان دقة الرواية التاريخية الفلسطينية</p>
         </div>
 
-        <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] overflow-hidden shadow-2xl flex flex-col font-cairo">
+        <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] overflow-hidden shadow-2xl flex flex-col font-cairo w-full h-[60dvh] max-h-[600px]">
           
           {/* Messages Area */}
-          <div ref={messagesContainerRef} className="h-[500px] overflow-y-auto p-6 space-y-6 flex flex-col">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 flex flex-col">
             {messages.map((msg) => (
               <motion.div 
                 key={msg.id}
