@@ -1,79 +1,121 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import HeritageCard from '../components/HeritageCard';
+import { Button, EmptyState, Section } from '../components/ui';
 import { heritageData, HeritageItem } from '../data/heritage';
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState('الكل');
+  const [selectedCategory, setSelectedCategory] = useState('الكل');
 
-  const cities = ['الكل', ...new Set(heritageData.map(item => item.city))];
+  const cities = useMemo(() => ['الكل', ...new Set(heritageData.map((item) => item.city))], []);
+  const categories = useMemo(() => ['الكل', ...new Set(heritageData.map((item) => item.category))], []);
 
   const filteredItems = heritageData.filter((item: HeritageItem) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.description.includes(searchQuery);
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      item.name.toLowerCase().includes(normalizedSearch) ||
+      item.description.toLowerCase().includes(normalizedSearch) ||
+      item.city.toLowerCase().includes(normalizedSearch) ||
+      item.category.toLowerCase().includes(normalizedSearch);
     const matchesCity = selectedCity === 'الكل' || item.city === selectedCity;
-    return matchesSearch && matchesCity;
+    const matchesCategory = selectedCategory === 'الكل' || item.category === selectedCategory;
+
+    return matchesSearch && matchesCity && matchesCategory;
   });
 
-  return (
-    <div className="turathi-custom-ui" style={{ paddingTop: '80px' }}>
-      <div className="turathi-container" style={{ paddingBottom: '60px' }}>
-        
-        <div className="turathi-section-header" style={{ marginTop: '40px' }}>
-          <h2>المجموعة التراثية</h2>
-          <p>تصفح أرشيفنا الرقمي الشامل للتراث، الحرف، والأزياء الفلسطينية العريقة.</p>
-        </div>
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedCity('الكل');
+    setSelectedCategory('الكل');
+  };
 
-        {/* Filters */}
+  return (
+    <div className="page-shell">
+      <Section
+        compact
+        eyebrow={
+          <>
+            <SlidersHorizontal size={15} aria-hidden="true" />
+            أرشيف قابل للاستكشاف
+          </>
+        }
+        title="المجموعة التراثية"
+        subtitle="تصفح أرشيفاً رقمياً مختاراً للحرف، الأزياء، والمنسوجات الفلسطينية مع صور موحدة ومساحات قراءة مريحة."
+      >
         <div className="turathi-filters-bar">
-          <input 
-            type="text" 
-            placeholder="ابحث عن ثوب، حرفة، مدينة..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="turathi-input"
-          />
-          <select 
-            value={selectedCity} 
+          <label className="relative">
+            <span className="sr-only">ابحث في المجموعة التراثية</span>
+            <input
+              type="text"
+              placeholder="ابحث عن ثوب، حرفة، مدينة..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="turathi-input"
+            />
+            <Search
+              size={18}
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
+            />
+          </label>
+
+          <select
+            value={selectedCity}
             onChange={(e) => setSelectedCity(e.target.value)}
             className="turathi-select"
+            aria-label="تصفية حسب المدينة"
           >
-            {cities.map(city => (
-              <option key={city} value={city}>{city}</option>
+            {cities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="turathi-select"
+            aria-label="تصفية حسب التصنيف"
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* Grid */}
-        <div className="turathi-grid">
-          {filteredItems.map((item) => (
-            <Link to={`/explore/${item.id}`} key={item.id} className="turathi-card">
-              <div className="turathi-card-img-wrapper">
-                <img src={item.imageUrl} alt={item.name} className="turathi-card-img" />
-                <div className="turathi-card-city-badge">
-                  <span>📍</span> {item.city}
-                </div>
-              </div>
-              <div className="turathi-card-body">
-                <span className="turathi-card-category">{item.category}</span>
-                <h3 className="turathi-card-title">{item.name}</h3>
-                <p className="turathi-card-desc">{item.description}</p>
-                
-                <div className="turathi-card-footer">
-                  <span className="turathi-link-text">اكتشف التفاصيل ←</span>
-                </div>
-              </div>
-            </Link>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5 text-sm font-bold text-text-muted">
+          <span>عدد النتائج: {filteredItems.length}</span>
+          {(searchQuery || selectedCity !== 'الكل' || selectedCategory !== 'الكل') && (
+            <Button variant="subtle" size="sm" icon={<X size={16} aria-hidden="true" />} onClick={resetFilters}>
+              مسح التصفية
+            </Button>
+          )}
         </div>
 
-        {filteredItems.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#7f8c8d' }}>
-            <h3>لم يتم العثور على أية نتائج مطابقة لبحثك.</h3>
+        {filteredItems.length > 0 ? (
+          <div className="turathi-grid">
+            {filteredItems.map((item) => (
+              <HeritageCard item={item} key={item.id} />
+            ))}
           </div>
+        ) : (
+          <EmptyState
+            title="لا توجد نتائج مطابقة"
+            description="جرّب كلمة بحث أعم أو امسح التصفية للعودة إلى المجموعة الكاملة."
+            action={
+              <Button variant="primary" onClick={resetFilters}>
+                عرض كل العناصر
+              </Button>
+            }
+          />
         )}
-
-      </div>
+      </Section>
     </div>
   );
 }

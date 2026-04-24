@@ -1,69 +1,148 @@
 @import "tailwindcss";
 
 @theme {
-  /* Light Backgrounds - Jerusalem Stone / Light Linen */
-  --color-bg-deep: #EAE6DF;
-  --color-bg-base: #F5F2EB;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-raised: #FAF9F6;
-  --color-bg-overlay: #DCD6CC;
+  --color-bg-deep: #eee7da;
+  --color-bg-base: #f8f4ea;
+  --color-bg-surface: #fffdf8;
+  --color-bg-raised: #f3ede2;
+  --color-bg-overlay: #ded2bf;
 
-  --color-olive-500: #607E34;
-  --color-olive-400: #7A9E42;
-  --color-olive-300: #9BBF56;
-  --color-olive-200: #BDD98A;
+  --color-olive-500: #526b42;
+  --color-olive-400: #6d8557;
+  --color-olive-300: #9bae85;
+  --color-olive-200: #d6dfc9;
 
-  --color-tatreez-500: #C0392B;
-  --color-tatreez-400: #E74C3C;
-  --color-tatreez-300: #F1948A;
+  --color-tatreez-500: #9f2f3d;
+  --color-tatreez-400: #bc4350;
+  --color-tatreez-300: #d9858d;
 
-  /* Dark Text */
-  --color-text-primary: #1A2114;
-  --color-text-secondary: #3D4A2B;
-  --color-text-muted: #737A66;
-  --color-gold-accent: #B8960C;
-  --color-pearl: #C9B99A;
+  --color-text-primary: #24301f;
+  --color-text-secondary: #45513d;
+  --color-text-muted: #6f7568;
+  --color-gold-accent: #a88322;
+  --color-pearl: #c9b99a;
 
-  /* Inverse Text for Dark Accents */
-  --color-text-inverse: #F5F0E8;
+  --color-text-inverse: #fffaf1;
 
-  --font-amiri: "Amiri", serif;
+  --font-amiri: "Cairo", sans-serif;
   --font-cairo: "Cairo", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 }
 
+:root {
+  --nav-height: 72px;
+  --color-primary: #526b42;
+  --color-primary-dark: #34472f;
+  --color-accent-red: #9f2f3d;
+  --color-cream: #f8f4ea;
+  --color-beige: #e7dac4;
+  --color-surface: #fffdf8;
+  --color-text: #24301f;
+  --color-muted: #6f7568;
+  --radius-card: 8px;
+  --radius-control: 8px;
+  --shadow-soft: 0 16px 42px rgba(38, 48, 31, 0.1);
+  --shadow-hover: 0 20px 54px rgba(38, 48, 31, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+  min-width: 320px;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-height) + 16px);
+}
+
+body,
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(82, 107, 66, 0.11), transparent 32rem),
+    linear-gradient(180deg, var(--color-cream), #f5efe2 45%, var(--color-cream));
+  color: var(--color-text);
+  font-family: var(--font-cairo);
+  line-height: 1.65;
+  text-rendering: geometricPrecision;
+}
+
+body.menu-open {
+  overflow: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(159, 47, 61, 0.18);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(159, 47, 61, 0.34);
+  outline-offset: 3px;
+}
+
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(96, 126, 52, 0.15);
+    background: rgba(255, 253, 248, 0.86);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(82, 107, 66, 0.14);
   }
   .olive-glow {
-    box-shadow: 0 4px 20px rgba(96, 126, 52, 0.15);
+    box-shadow: 0 12px 32px rgba(82, 107, 66, 0.18);
   }
   .red-glow {
-    box-shadow: 0 4px 20px rgba(192, 57, 43, 0.15);
+    box-shadow: 0 12px 32px rgba(159, 47, 61, 0.16);
   }
   .tatreez-pattern {
-    background-image: linear-gradient(45deg, var(--color-bg-deep) 25%, transparent 25%),
-                      linear-gradient(-45deg, var(--color-bg-deep) 25%, transparent 25%),
-                      linear-gradient(45deg, transparent 75%, var(--color-bg-deep) 75%),
-                      linear-gradient(-45deg, transparent 75%, var(--color-bg-deep) 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px 10px, 10px 0;
+    background-image:
+      linear-gradient(45deg, rgba(82, 107, 66, 0.1) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(82, 107, 66, 0.1) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(159, 47, 61, 0.1) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(159, 47, 61, 0.1) 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
   }
   .laser-line {
     position: absolute;
     width: 100%;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(192, 57, 43, 0.8), transparent);
-    box-shadow: 0 0 15px rgba(192, 57, 43, 0.5);
+    background: linear-gradient(90deg, transparent, rgba(159, 47, 61, 0.78), transparent);
+    box-shadow: 0 0 15px rgba(159, 47, 61, 0.32);
     top: 40%;
     z-index: 10;
   }
   .grid-bg {
-    background-image: linear-gradient(rgba(96, 126, 52, 0.08) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(96, 126, 52, 0.08) 1px, transparent 1px);
+    background-image:
+      linear-gradient(rgba(82, 107, 66, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(82, 107, 66, 0.06) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 }

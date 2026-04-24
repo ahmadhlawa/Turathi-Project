@@ -15,10 +15,10 @@ import Footer from './components/Footer';
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col font-cairo bg-bg-base text-text-primary">
+      <div className="app-shell flex flex-col">
         <Navbar />
         
-        <main className="flex-1 mt-16">
+        <main className="app-main">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/map" element={<MapPage />} />

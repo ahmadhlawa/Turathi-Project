@@ -1,6 +1,8 @@
-import { useState, useRef } from 'react';
-import { Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ImagePlus, ScanLine, Upload } from 'lucide-react';
 import { motion } from 'motion/react';
+import type { ChangeEvent } from 'react';
+import { useRef, useState } from 'react';
+import { Badge, Button, LoadingSpinner, cn } from './ui';
 
 declare global {
   interface Window {
@@ -10,275 +12,302 @@ declare global {
 
 type ScanStatus = 'idle' | 'selected' | 'scanning' | 'complete' | 'error';
 
+interface Prediction {
+  className: string;
+  probability: number;
+}
+
 interface ScanResult {
+  probableRegion: string;
   embroideryType: string;
-  origin: string;
-  patterns: string;
+  visualEvidence: string[];
   confidence: number;
-  verified: boolean;
-  details: string;
+  matchLabel: 'مطابقة قوية' | 'مطابقة محتملة' | 'مطابقة ضعيفة' | 'مؤشرات غير كافية';
+  culturalNotes: string;
+  recommendation: string;
+}
+
+const maxFileSize = 8 * 1024 * 1024;
+
+function labelFromConfidence(confidence: number): ScanResult['matchLabel'] {
+  if (confidence >= 80) return 'مطابقة قوية';
+  if (confidence >= 55) return 'مطابقة محتملة';
+  if (confidence >= 30) return 'مطابقة ضعيفة';
+  return 'مؤشرات غير كافية';
+}
+
+function badgeVariant(label: ScanResult['matchLabel']) {
+  if (label === 'مطابقة قوية') return 'strong';
+  if (label === 'مطابقة محتملة') return 'default';
+  return 'muted';
+}
+
+function normalizeResult(data: any, fallbackClassName: string, fallbackConfidence: number): ScanResult {
+  const confidence = Math.max(
+    0,
+    Math.min(100, Number.isFinite(Number(data?.confidence)) ? Math.round(Number(data.confidence)) : fallbackConfidence)
+  );
+  const evidence = Array.isArray(data?.visualEvidence)
+    ? data.visualEvidence
+    : [data?.visualEvidence || data?.patterns].filter(Boolean);
+
+  return {
+    probableRegion: data?.probableRegion || data?.origin || 'لا يمكن تحديد المنطقة من الصورة وحدها',
+    embroideryType: data?.embroideryType || fallbackClassName || 'نمط تطريز غير محدد',
+    visualEvidence:
+      evidence.length > 0
+        ? evidence
+        : ['لا تظهر في الصورة تفاصيل كافية للحكم بثقة عالية على النمط أو المنطقة.'],
+    confidence,
+    matchLabel: data?.matchLabel || labelFromConfidence(confidence),
+    culturalNotes:
+      data?.culturalNotes ||
+      data?.details ||
+      'التحليل الرقمي قراءة مساندة للملامح البصرية، ولا يغني عن معرفة مصدر القطعة وسياقها الحرفي.',
+    recommendation:
+      data?.recommendation ||
+      'استخدم صورة أمامية واضحة بإضاءة جيدة، ويفضل إضافة لقطة قريبة للغرز والزخارف.'
+  };
 }
 
 export default function PatternScanner() {
   const [status, setStatus] = useState<ScanStatus>('idle');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [fileName, setFileName] = useState('');
   const [result, setResult] = useState<ScanResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string>('');
-  
+  const [errorMsg, setErrorMsg] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       setStatus('error');
-      setErrorMsg('الرجاء رفع صورة صالحة');
+      setImageSrc(null);
+      setResult(null);
+      setFileName('');
+      setErrorMsg('الملف غير مدعوم. الرجاء رفع صورة بصيغة JPG أو PNG أو WebP.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > maxFileSize) {
+      setStatus('error');
+      setImageSrc(null);
+      setResult(null);
+      setFileName('');
+      setErrorMsg('حجم الصورة كبير. الرجاء اختيار صورة أقل من 8MB.');
+      e.target.value = '';
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
       setImageSrc(event.target?.result as string);
+      setFileName(file.name);
       setStatus('selected');
       setResult(null);
+      setErrorMsg('');
     };
     reader.readAsDataURL(file);
   };
 
   const startScan = async () => {
-    if (!imageSrc || !imageRef.current) return;
+    if (!imageSrc || !imageRef.current || status === 'scanning') return;
     setStatus('scanning');
-    
+    setErrorMsg('');
+
     try {
-      // 1. Load Teachable Machine Model
-      const URL = "https://teachablemachine.withgoogle.com/models/DV5JcaVPW/";
-      const modelURL = URL + "model.json";
-      const metadataURL = URL + "metadata.json";
+      const URL = 'https://teachablemachine.withgoogle.com/models/DV5JcaVPW/';
+      const modelURL = URL + 'model.json';
+      const metadataURL = URL + 'metadata.json';
 
       if (!window.tmImage) {
-        throw new Error("لم يتم تحميل مكتبة تحليل الصور، تأكد من الاتصال بالانترنت.");
+        throw new Error('لم يتم تحميل مكتبة تحليل الصور. تأكد من اتصال الإنترنت ثم أعد المحاولة.');
       }
 
       const model = await window.tmImage.load(modelURL, metadataURL);
-      
-      // 2. Predict
-      const predictions = await model.predict(imageRef.current);
+      const predictions: Prediction[] = await model.predict(imageRef.current);
+
       if (!predictions || predictions.length === 0) {
-          throw new Error("فشل الموديل في تحليل الصورة");
+        throw new Error('لم يتمكن النموذج من قراءة الصورة. جرّب صورة أوضح للقطعة.');
       }
 
-      // Get top prediction
-      const topPrediction = predictions.reduce((prev: any, current: any) => 
-        (prev.probability > current.probability) ? prev : current
-      );
+      const rankedPredictions = [...predictions].sort((a, b) => b.probability - a.probability);
+      const topPrediction = rankedPredictions[0];
+      const fallbackConfidence = Math.round(topPrediction.probability * 100);
 
-      // Threshold check: Prevent false positives for unrelated images
-      if (topPrediction.probability < 0.65) {
-        throw new Error("عذراً، لم أتمكن من التعرف على هذا النمط كقطعة تراث فلسطينية. يرجى تجربة صورة أوضح أو لقطعة أخرى.");
-      }
-
-      // 3. Send top prediction to Groq to generate explanatory details
       const response = await fetch('/api/scan-pattern', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           className: topPrediction.className,
-          probability: topPrediction.probability 
+          probability: topPrediction.probability,
+          predictions: rankedPredictions.slice(0, 3)
         })
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'فشل الفحص: تأكد من مفتاح الـ API');
+        throw new Error(errData.error || 'تعذر إكمال التحليل الآن. تأكد من إعداد مفتاح API.');
       }
 
       const data = await response.json();
-      setResult(data);
+      setResult(normalizeResult(data, topPrediction.className, fallbackConfidence));
       setStatus('complete');
     } catch (err: any) {
-      console.error(err);
       setStatus('error');
       setErrorMsg(err.message || 'حدث خطأ أثناء فحص الصورة. حاول مرة أخرى.');
     }
   };
 
+  const canScan = Boolean(imageSrc) && status !== 'scanning';
+
   return (
-    <section id="scanner" className="min-h-[100dvh] pt-24 pb-8 px-6 flex flex-col justify-center items-center relative z-10 w-full max-w-7xl mx-auto bg-bg-base snap-start">
-      <div className="flex items-center gap-4 mb-8 w-full">
-        <div className="w-1.5 h-10 bg-olive-500 rounded-full" />
-        <h2 className="text-4xl font-bold font-amiri text-text-primary">محلل الأنماط التراثية</h2>
-      </div>
+    <section id="scanner" className="turathi-section scanner-section">
+      <div className="turathi-container">
+        <header className="turathi-section-header">
+          <span className="section-eyebrow">
+            <ScanLine size={15} aria-hidden="true" />
+            تحليل بصري متوازن
+          </span>
+          <h2>محلل الأنماط التراثية</h2>
+          <p>
+            ارفع صورة لتطريز أو نمط تراثي، وسيقدم النظام قراءة هادئة تشمل الأصل المحتمل،
+            الأدلة البصرية، مستوى الثقة، وملاحظة ثقافية دون مبالغة في التحذير.
+          </p>
+        </header>
 
-      <div className="bg-bg-surface border border-olive-500/25 rounded-[16px] p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 shadow-2xl relative overflow-hidden w-full">
-        
-        {/* Right Column (Controls) */}
-        <div className="flex flex-col justify-center space-y-6 relative z-20">
-          <div>
-            <h3 className="text-2xl font-bold mb-3 font-amiri text-olive-500">التحقق الذكي من التطريز</h3>
-            <p className="text-text-secondary leading-relaxed text-[15px]">
-              ارفع صورة لقطعة تطريز، وسيقوم نظام التحقق الذكي بتحليلها ومطابقتها 
-              لتحديد الأصل الجغرافي، نوع الغرزة، والمعاني الرمزية للأنماط لحمايتها من التزوير الثقافي.
-            </p>
-          </div>
+        <div className="scanner-grid ui-card">
+          <div className="scanner-copy">
+            <div>
+              <h3>تحليل التطريز باحترام للسياق</h3>
+              <p>
+                النتيجة ليست حكماً نهائياً على القطعة، بل قراءة مساندة من الصورة. عند ضعف
+                الثقة سيعرض النظام مؤشرات غير كافية بدلاً من رسائل مخيفة أو اتهامية.
+              </p>
+            </div>
 
-          <div className="space-y-3 font-cairo">
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
-              className="hidden" 
-            />
-            
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full py-3 border border-dashed border-olive-500/40 hover:bg-olive-500/10 rounded-[8px] flex items-center justify-center gap-3 text-text-secondary hover:text-text-primary transition-all bg-bg-base"
-            >
-              <Upload className="w-5 h-5 text-olive-500" />
-              <span className="font-bold">اختر صورة من جهازك</span>
-            </button>
+            <div className="scanner-actions">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+              />
 
-            <button
-              onClick={startScan}
-              disabled={status === 'scanning' || status === 'idle'}
-              className={`w-full py-3 rounded-[8px] font-bold text-[15px] transition-all flex items-center justify-center gap-2
-                ${(status === 'idle') ? 'bg-bg-raised text-text-muted cursor-not-allowed border border-bg-overlay' : ''}
-                ${status === 'selected' || status === 'error' || status === 'complete' ? 'bg-olive-500 text-white olive-glow hover:bg-olive-400' : ''}
-                ${status === 'scanning' ? 'bg-olive-400 text-white cursor-wait relative overflow-hidden' : ''}
-              `}
-            >
-              {status === 'scanning' ? (
-                <>
-                  <span className="relative z-10">جاري التحليل المعرفي...</span>
-                  <motion.div 
-                    initial={{ left: '-100%' }}
-                    animate={{ left: '100%' }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-text-primary/20 to-transparent"
-                  />
-                </>
-              ) : (
-                'بدء الفحص الذكي'
-              )}
-            </button>
+              <Button
+                variant="secondary"
+                icon={<Upload size={18} aria-hidden="true" />}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                اختر صورة
+              </Button>
+
+              <Button
+                onClick={startScan}
+                disabled={!canScan}
+                icon={status === 'scanning' ? <LoadingSpinner /> : <ScanLine size={18} aria-hidden="true" />}
+              >
+                {status === 'scanning' ? 'جاري التحليل' : 'بدء التحليل'}
+              </Button>
+            </div>
+
+            {fileName && <Badge variant="muted">الصورة المختارة: {fileName}</Badge>}
 
             {status === 'error' && (
-              <div className="flex items-center gap-2 text-tatreez-300 mt-2">
-                <AlertCircle className="w-5 h-5" />
-                <span>{errorMsg}</span>
+              <div className="ai-response ai-response--notice flex items-start gap-2">
+                <AlertCircle size={20} aria-hidden="true" className="mt-1 text-tatreez-500" />
+                <p className="m-0">{errorMsg}</p>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Left Column (Visualizer) */}
-        <div className="relative aspect-square md:aspect-auto md:h-[600px] rounded-[16px] overflow-hidden glass border-none flex items-center justify-center">
-          
-          <div className="absolute inset-0 tatreez-pattern opacity-40 mix-blend-overlay pointer-events-none" />
-
-          {!imageSrc && (
-            <div className="w-[80%] max-w-[400px] aspect-square border-2 border-dashed border-olive-500/40 rounded-[16px] flex flex-col items-center justify-center relative z-10 bg-bg-base/50 backdrop-blur-md">
-              <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-olive-500"></div>
-              <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-olive-500"></div>
-              <Upload className="w-16 h-16 mb-4 text-olive-500 !stroke-1" />
-              <p className="text-xl text-text-secondary font-cairo">ارفع صورة للفحص</p>
-            </div>
-          )}
-
-          {imageSrc && (
-            <img 
-              ref={imageRef}
-              src={imageSrc} 
-              alt="Scan preview" 
-              crossOrigin="anonymous"
-              className={`w-full h-full object-cover relative z-10 rounded-[16px] transition-all duration-700 ${status === 'scanning' ? 'opacity-60 scale-105 blur-[2px]' : 'opacity-100 scale-100 blur-0'}`}
-            />
-          )}
-
-          {/* Scanning Overlay Animations */}
-          {status === 'scanning' && (
-            <>
-              <motion.div 
-                className="laser-line z-20"
-                initial={{ top: '10%' }}
-                animate={{ top: '90%' }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "linear",
-                  repeatType: "reverse"
-                }}
-              />
-              {/* Corner brackets */}
-              <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-tatreez-400 z-20 animate-pulse" />
-              <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-tatreez-400 z-20 animate-pulse" />
-              <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-tatreez-400 z-20 animate-pulse" />
-              <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-tatreez-400 z-20 animate-pulse" />
-            </>
-          )}
-
-          {/* Results Overlay */}
-          {status === 'complete' && result && (
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="absolute bottom-4 left-4 right-4 glass rounded-[16px] p-6 z-30 olive-glow border-none"
-            >
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-olive-500/20">
-                <div className="flex items-center gap-2 text-olive-500">
-                  <CheckCircle2 className="w-6 h-6" />
-                  <span className="font-bold text-lg font-cairo text-text-primary">تم التحقق بنجاح</span>
+            {status === 'complete' && result && (
+              <div className="scanner-result ui-card">
+                <div className="scanner-result__head">
+                  <Badge variant={badgeVariant(result.matchLabel)}>{result.matchLabel}</Badge>
+                  <span className="font-black text-olive-500">{result.confidence}% ثقة</span>
                 </div>
-                {result.verified && (
-                  <span className="bg-olive-500/15 text-olive-500 border border-olive-500 px-3 py-1 rounded-[8px] text-sm font-bold font-cairo">
-                    أصل فلسطيني موثق ✓
-                  </span>
-                )}
-              </div>
-              
-              <div className="space-y-3 text-sm md:text-base font-cairo">
-                <div className="flex border-b border-bg-overlay pb-2">
-                  <span className="text-text-muted w-1/3">المنطقة الجغرافية:</span>
-                  <span className="text-text-primary font-bold">{result.origin}</span>
-                </div>
-                <div className="flex border-b border-bg-overlay pb-2">
-                  <span className="text-text-muted w-1/3">نوع التطريز/الغرزة:</span>
-                  <span className="text-text-primary">{result.embroideryType}</span>
-                </div>
-                <div className="flex border-b border-bg-overlay pb-2">
-                  <span className="text-text-muted w-1/3">الأنماط والدلالات:</span>
-                  <span className="text-text-primary">{result.patterns}</span>
-                </div>
-                <div className="pt-2">
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 1.5 }}
-                    className="text-text-secondary italic mb-3 leading-relaxed"
-                  >
-                    "{result.details}"
-                  </motion.p>
-                  <div className="flex items-center gap-4 mt-4">
-                    <span className="text-text-muted text-sm border-olive-500/20">مستوى الثقة:</span>
-                    <div className="flex-1 h-2 bg-bg-raised rounded-full overflow-hidden">
-                      <motion.div 
+
+                <div className="scanner-result__grid">
+                  <div className="scanner-result__item">
+                    <strong>الأصل أو المنطقة المحتملة</strong>
+                    <p>{result.probableRegion}</p>
+                  </div>
+
+                  <div className="scanner-result__item">
+                    <strong>نوع النمط المقترح</strong>
+                    <p>{result.embroideryType}</p>
+                  </div>
+
+                  <div className="scanner-result__item">
+                    <strong>الأدلة البصرية</strong>
+                    <ul>
+                      {result.visualEvidence.map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="scanner-result__item">
+                    <strong>ملاحظات ثقافية</strong>
+                    <p>{result.culturalNotes}</p>
+                  </div>
+
+                  <div className="scanner-result__item">
+                    <strong>التوصية</strong>
+                    <p>{result.recommendation}</p>
+                  </div>
+
+                  <div className="confidence-meter" aria-label={`مستوى الثقة ${result.confidence}%`}>
+                    <div className="confidence-meter__track">
+                      <motion.div
+                        className="confidence-meter__bar"
                         initial={{ width: 0 }}
                         animate={{ width: `${result.confidence}%` }}
-                        transition={{ duration: 1 }}
-                        className="h-full bg-olive-500"
+                        transition={{ duration: 0.7, ease: 'easeOut' }}
                       />
                     </div>
-                    <span className="text-olive-500 font-bold font-mono text-sm">%{result.confidence}</span>
+                    <span className="font-mono font-bold text-sm">{result.confidence}%</span>
                   </div>
                 </div>
               </div>
-            </motion.div>
-          )}
+            )}
+          </div>
 
+          <div className={cn('scanner-preview', status === 'scanning' && 'is-loading')}>
+            <div className="absolute inset-0 tatreez-pattern opacity-60" aria-hidden="true" />
+
+            {!imageSrc && (
+              <div className="scanner-placeholder">
+                <ImagePlus size={54} strokeWidth={1.5} aria-hidden="true" />
+                <span className="font-black">ارفع صورة واضحة للنمط</span>
+                <small>يفضل أن تظهر الغرز والزخارف من الأمام</small>
+              </div>
+            )}
+
+            {imageSrc && <img ref={imageRef} src={imageSrc} alt="معاينة الصورة المختارة للتحليل" />}
+
+            {status === 'scanning' && (
+              <>
+                <motion.div
+                  className="laser-line"
+                  initial={{ top: '12%' }}
+                  animate={{ top: '88%' }}
+                  transition={{ duration: 1.8, repeat: Infinity, ease: 'linear', repeatType: 'reverse' }}
+                />
+                <div className="scanner-overlay">
+                  <CheckCircle2 size={20} aria-hidden="true" />
+                  <span className="mr-2">نقرأ التفاصيل البصرية بهدوء...</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-
       </div>
     </section>
   );
