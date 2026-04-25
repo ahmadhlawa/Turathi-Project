@@ -8,6 +8,325 @@ dotenv.config({ quiet: true });
 
 type TruthStatus = 'verified' | 'needs_context' | 'possibly_inaccurate';
 
+const outOfPalestineScopeReply = 'أنا فلسطيني، ولا أتكلم إلا لفلسطين.';
+
+const allowedPalestinianReferences = [
+  'موسوعة التراث الفلسطيني - https://palturath.com/ar',
+  'أرشيف المتحف الفلسطيني الرقمي - https://palarchive.org/',
+  'مؤسسة الدراسات الفلسطينية - https://www.palestine-studies.org/',
+  'المتحف الفلسطيني - https://palmuseum.org/',
+  'Palestine Poster Project Archives - https://www.palestineposterproject.org/'
+];
+
+const knownPalestinianPlaces = [
+  {
+    names: ['الدهيشة', 'مخيم الدهيشة'],
+    reply:
+      'الدهيشة مخيم لاجئين فلسطيني في محافظة بيت لحم، يقع جنوب مدينة بيت لحم. ارتبط المخيم بذاكرة اللجوء الفلسطيني بعد النكبة وبالقرى الفلسطينية التي هُجّر أهلها.'
+  },
+  {
+    names: ['بلاطة', 'مخيم بلاطة'],
+    reply:
+      'مخيم بلاطة مخيم لاجئين فلسطيني قرب مدينة نابلس، ويعد من المخيمات الفلسطينية المعروفة في الضفة الغربية ومرتبطاً بذاكرة اللجوء بعد النكبة.'
+  },
+  {
+    names: ['عايدة', 'مخيم عايدة'],
+    reply: 'مخيم عايدة مخيم لاجئين فلسطيني شمال بيت لحم، ويقع في محيط بيت لحم وبيت جالا.'
+  },
+  {
+    names: ['العزة', 'مخيم العزة', 'بيت جبرين', 'مخيم بيت جبرين'],
+    reply: 'مخيم العزة، ويعرف أيضاً بمخيم بيت جبرين، مخيم لاجئين فلسطيني في منطقة بيت لحم.'
+  },
+  {
+    names: ['الأمعري', 'الامعري', 'مخيم الأمعري', 'مخيم الامعري'],
+    reply: 'مخيم الأمعري مخيم لاجئين فلسطيني في محيط رام الله والبيرة.'
+  },
+  {
+    names: ['الجلزون', 'مخيم الجلزون'],
+    reply: 'مخيم الجلزون مخيم لاجئين فلسطيني شمال رام الله.'
+  },
+  {
+    names: ['قلنديا', 'مخيم قلنديا'],
+    reply: 'مخيم قلنديا مخيم لاجئين فلسطيني في منطقة القدس ورام الله.'
+  },
+  {
+    names: ['شعفاط', 'مخيم شعفاط'],
+    reply: 'مخيم شعفاط مخيم لاجئين فلسطيني في القدس.'
+  },
+  {
+    names: ['عقبة جبر', 'مخيم عقبة جبر'],
+    reply: 'مخيم عقبة جبر مخيم لاجئين فلسطيني قرب أريحا.'
+  },
+  {
+    names: ['عين السلطان', 'مخيم عين السلطان'],
+    reply: 'مخيم عين السلطان مخيم لاجئين فلسطيني في منطقة أريحا.'
+  },
+  {
+    names: ['الفارعة', 'مخيم الفارعة'],
+    reply: 'مخيم الفارعة مخيم لاجئين فلسطيني في شمال الضفة الغربية، في محيط طوباس.'
+  },
+  {
+    names: ['عسكر', 'مخيم عسكر'],
+    reply: 'مخيم عسكر مخيم لاجئين فلسطيني في منطقة نابلس.'
+  },
+  {
+    names: ['عين بيت الماء', 'مخيم عين بيت الماء'],
+    reply: 'مخيم عين بيت الماء مخيم لاجئين فلسطيني في منطقة نابلس.'
+  },
+  {
+    names: ['جنين', 'مخيم جنين'],
+    reply: 'مخيم جنين مخيم لاجئين فلسطيني في مدينة جنين.'
+  },
+  {
+    names: ['طولكرم', 'مخيم طولكرم'],
+    reply: 'مخيم طولكرم مخيم لاجئين فلسطيني في مدينة طولكرم.'
+  },
+  {
+    names: ['نور شمس', 'مخيم نور شمس'],
+    reply: 'مخيم نور شمس مخيم لاجئين فلسطيني قرب طولكرم.'
+  },
+  {
+    names: ['جباليا', 'مخيم جباليا'],
+    reply: 'مخيم جباليا مخيم لاجئين فلسطيني في شمال غزة.'
+  },
+  {
+    names: ['الشاطئ', 'مخيم الشاطئ'],
+    reply: 'مخيم الشاطئ مخيم لاجئين فلسطيني في غزة.'
+  },
+  {
+    names: ['النصيرات', 'مخيم النصيرات'],
+    reply: 'مخيم النصيرات مخيم لاجئين فلسطيني في وسط غزة.'
+  },
+  {
+    names: ['البريج', 'مخيم البريج'],
+    reply: 'مخيم البريج مخيم لاجئين فلسطيني في وسط غزة.'
+  },
+  {
+    names: ['المغازي', 'مخيم المغازي'],
+    reply: 'مخيم المغازي مخيم لاجئين فلسطيني في وسط غزة.'
+  },
+  {
+    names: ['دير البلح', 'مخيم دير البلح'],
+    reply: 'مخيم دير البلح مخيم لاجئين فلسطيني في وسط غزة.'
+  },
+  {
+    names: ['خان يونس', 'مخيم خان يونس'],
+    reply: 'مخيم خان يونس مخيم لاجئين فلسطيني في جنوب غزة.'
+  },
+  {
+    names: ['رفح', 'مخيم رفح'],
+    reply: 'مخيم رفح مخيم لاجئين فلسطيني في جنوب غزة.'
+  },
+  {
+    names: ['دير ياسين'],
+    reply: 'دير ياسين قرية فلسطينية مهجرة في قضاء القدس، وتحضر في الذاكرة الفلسطينية بسبب المجزرة التي وقعت فيها عام 1948.'
+  },
+  {
+    names: ['لفتا'],
+    reply: 'لفتا قرية فلسطينية مهجرة من قرى القدس، ما زالت بيوتها الحجرية شاهدة على الذاكرة العمرانية الفلسطينية.'
+  },
+  {
+    names: ['عين كارم'],
+    reply: 'عين كارم قرية فلسطينية مهجرة في قضاء القدس.'
+  },
+  {
+    names: ['المالحة'],
+    reply: 'المالحة قرية فلسطينية مهجرة في قضاء القدس.'
+  },
+  {
+    names: ['القسطل'],
+    reply: 'القسطل قرية فلسطينية مهجرة في قضاء القدس، ارتبط اسمها بمعارك عام 1948.'
+  },
+  {
+    names: ['قالونيا', 'قلونيا'],
+    reply: 'قالونيا قرية فلسطينية مهجرة في قضاء القدس.'
+  },
+  {
+    names: ['صفورية'],
+    reply: 'صفورية قرية فلسطينية مهجرة في قضاء الناصرة.'
+  },
+  {
+    names: ['لوبيا'],
+    reply: 'لوبيا قرية فلسطينية مهجرة في قضاء طبريا.'
+  },
+  {
+    names: ['الطنطورة'],
+    reply: 'الطنطورة قرية فلسطينية مهجرة على الساحل الفلسطيني قرب حيفا.'
+  },
+  {
+    names: ['البروة'],
+    reply: 'البروة قرية فلسطينية مهجرة في قضاء عكا.'
+  },
+  {
+    names: ['إجزم', 'اجزم'],
+    reply: 'إجزم قرية فلسطينية مهجرة في قضاء حيفا.'
+  },
+  {
+    names: ['كفر برعم'],
+    reply: 'كفر برعم قرية فلسطينية مهجرة في الجليل.'
+  },
+  {
+    names: ['إقرت', 'اقرت'],
+    reply: 'إقرت قرية فلسطينية مهجرة في الجليل.'
+  },
+  {
+    names: ['بيت دجن'],
+    reply: 'بيت دجن قرية فلسطينية مهجرة في قضاء يافا.'
+  },
+  {
+    names: ['سلمة'],
+    reply: 'سلمة قرية فلسطينية مهجرة في قضاء يافا.'
+  }
+];
+
+const palestineScopeTerms = [
+  'فلسطين',
+  'فلسطيني',
+  'فلسطينية',
+  'الفلسطيني',
+  'الفلسطينية',
+  'القدس',
+  'يافا',
+  'حيفا',
+  'عكا',
+  'غزة',
+  'رام الله',
+  'الخليل',
+  'نابلس',
+  'بيت لحم',
+  'جنين',
+  'طولكرم',
+  'قلقيلية',
+  'أريحا',
+  'اريحا',
+  'صفد',
+  'طبريا',
+  'اللد',
+  'الرملة',
+  'بئر السبع',
+  'بيسان',
+  'الناصرة',
+  'الكوفية',
+  'كوفية',
+  'تطريز',
+  'التطريز',
+  'ثوب',
+  'الثوب',
+  'تراث',
+  'التراث',
+  'نكبة',
+  'النكبة',
+  'قرية',
+  'قرى',
+  'القرية',
+  'مخيم',
+  'المخيم',
+  'مخيمات',
+  'المخيمات',
+  'مثل',
+  'أمثال',
+  'امثال',
+  'المثل',
+  'الأمثال',
+  'قصة',
+  'قصص',
+  'حكاية',
+  'حكايات',
+  'أغنية',
+  'اغنية',
+  'أغاني',
+  'اغاني',
+  'أهزوجة',
+  'اهازيج',
+  'أهازيج',
+  'موسوعة التراث الفلسطيني',
+  'palturath',
+  'الدلعونا',
+  'دلعونا',
+  'عتابا',
+  'ميجانا',
+  'زجل',
+  'زيتون',
+  'الزيتون',
+  'حصاد',
+  'العرس',
+  'الأعراس',
+  'احتلال',
+  'الاحتلال',
+  'اسرائيل',
+  'إسرائيل',
+  'palestine',
+  'palestinian',
+  'jerusalem',
+  'gaza',
+  'jafa',
+  'jaffa',
+  'haifa',
+  'nablus',
+  'hebron',
+  'bethlehem',
+  'nakba',
+  'tatreez',
+  'embroidery',
+  'keffiyeh',
+  'occupation',
+  'israel',
+  'israeli'
+];
+
+const outOfPalestineTerms = [
+  'فرنسا',
+  'باريس',
+  'أمريكا',
+  'امريكا',
+  'الولايات المتحدة',
+  'بريطانيا',
+  'لندن',
+  'ألمانيا',
+  'المانيا',
+  'برلين',
+  'إيطاليا',
+  'ايطاليا',
+  'روما',
+  'إسبانيا',
+  'اسبانيا',
+  'مدريد',
+  'تركيا',
+  'أنقرة',
+  'انقرة',
+  'روسيا',
+  'موسكو',
+  'الصين',
+  'بكين',
+  'الهند',
+  'دلهي',
+  'اليابان',
+  'طوكيو',
+  'مصر',
+  'القاهرة',
+  'الأردن',
+  'الاردن',
+  'عمان',
+  'سوريا',
+  'دمشق',
+  'لبنان',
+  'بيروت',
+  'السعودية',
+  'الرياض',
+  'قطر',
+  'الدوحة',
+  'الإمارات',
+  'الامارات',
+  'دبي',
+  'الكويت',
+  'العراق',
+  'بغداد',
+  'المغرب',
+  'الرباط',
+  'تونس',
+  'الجزائر'
+];
+
 function extractJsonObject(text: string) {
   const trimmed = text.trim();
   try {
@@ -44,6 +363,90 @@ function normalizeTruthStatus(status: unknown): TruthStatus {
     return status;
   }
   return 'needs_context';
+}
+
+function isPalestineScopedMessage(message: string) {
+  const normalized = message.toLowerCase();
+  return palestineScopeTerms.some((term) => normalized.includes(term.toLowerCase()));
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function includesWholePhrase(message: string, phrase: string) {
+  const normalized = message.toLowerCase();
+  const escaped = escapeRegExp(phrase.toLowerCase());
+  return new RegExp(`(^|[\\s؟?!.،,؛:()[\\]{}"'])${escaped}($|[\\s؟?!.،,؛:()[\\]{}"'])`).test(normalized);
+}
+
+function isExplicitlyOutOfPalestine(message: string) {
+  return outOfPalestineTerms.some((term) => includesWholePhrase(message, term));
+}
+
+function looksLikePotentialPalestinianPlaceName(message: string) {
+  const cleaned = message
+    .replace(/[؟?!.،,؛:()[\]{}"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return false;
+
+  const hasArabic = /[\u0600-\u06FF]/.test(cleaned);
+  if (!hasArabic) return false;
+
+  const hasPlaceHint = /(قرية|القرية|مخيم|المخيم|مخيمات|بلدة|مدينة|خربة|خربه)/.test(cleaned);
+  const words = cleaned.split(' ').filter(Boolean);
+  const questionWords = ['ما', 'من', 'متى', 'كيف', 'لماذا', 'ليش', 'هل', 'اين', 'أين'];
+  const isShortNameQuery = words.length <= 4 && !questionWords.includes(words[0]);
+
+  return hasPlaceHint || isShortNameQuery;
+}
+
+function shouldEvaluateAsPalestinianScope(message: string) {
+  if (isPalestineScopedMessage(message)) return true;
+  if (isExplicitlyOutOfPalestine(message)) return false;
+  return looksLikePotentialPalestinianPlaceName(message);
+}
+
+function normalizePlaceText(value: string) {
+  return value
+    .replace(/[إأآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/[؟?!.،,؛:()[\]{}"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function findKnownPalestinianPlace(message: string) {
+  const normalized = normalizePlaceText(message);
+  return knownPalestinianPlaces.find((place) =>
+    place.names.some((name) => {
+      const normalizedName = normalizePlaceText(name);
+      return normalized === normalizedName || normalized.includes(normalizedName);
+    })
+  );
+}
+
+function placeReferenceReply(placeReply: string) {
+  return `${placeReply}\n\nالمراجع المعتمدة للمتابعة والتحقق التفصيلي: أرشيف المتحف الفلسطيني الرقمي، ومؤسسة الدراسات الفلسطينية، والمتحف الفلسطيني.`;
+}
+
+function extractUserQuestion(message: string) {
+  const match = message.match(/سؤال المستخدم:\s*([\s\S]*)$/);
+  return (match?.[1] || message).trim();
+}
+
+function enforcePalestinianNaming(reply: unknown) {
+  return String(reply || '')
+    .replace(/دولة\s+(إسرائيل|اسرائيل)/g, 'الاحتلال الإسرائيلي')
+    .replace(/الاحتلال\s+ال(?:إ|ا)سرائيلي/g, 'الاحتلال الإسرائيلي')
+    .replace(/ال(?:إ|ا)سرائيلي(?:ة|ين)?/g, 'الاحتلال الإسرائيلي')
+    .replace(/(?:إ|ا)سرائيلي(?:ة|ين)?/g, 'الاحتلال الإسرائيلي')
+    .replace(/(إسرائيل|اسرائيل)/g, 'الاحتلال الإسرائيلي')
+    .replace(/الاحتلال\s+الاحتلال الإسرائيلي/g, 'الاحتلال الإسرائيلي')
+    .replace(/الاحتلال\s+الالاحتلال الإسرائيليي/g, 'الاحتلال الإسرائيلي')
+    .trim();
 }
 
 function getEnvValue(...names: string[]) {
@@ -174,6 +577,13 @@ ${rankedPredictions.map((item: any, index: number) => `${index + 1}. ${item.clas
 
 Important behavior:
 - Answer in Arabic.
+- Treat the piece as Palestinian embroidery only, and use Palestinian place names.
+- Identify the most likely Palestinian city or town connected to the embroidery pattern whenever the visual/classifier evidence allows it.
+- The "cityName" field must contain only the Palestinian city/town name, such as رام الله، بيت لحم، الخليل، يافا، غزة، نابلس، بئر السبع، القدس، جنين، طولكرم, or "غير محدد" when evidence is insufficient.
+- Use these Palestinian references as the primary knowledge frame:
+${allowedPalestinianReferences.map((reference) => `  - ${reference}`).join('\n')}
+- You may use widely established Palestinian embroidery knowledge when the references are not enough, but do not invent source claims.
+- For Palestinian proverbs, folk chants/songs, zajal, and folk stories, treat "موسوعة التراث الفلسطيني - https://palturath.com/ar" as the primary reference. Use the other approved references only as supporting context.
 - Do not overstate certainty.
 - Do not use words like fake, wrong, dangerous, misleading, or false unless there is very clear evidence.
 - If the image quality or classifier confidence is low, explain that visual evidence is insufficient instead of giving a warning.
@@ -188,6 +598,7 @@ Important behavior:
 
 Return JSON only in this exact shape:
 {
+  "cityName": "اسم المدينة أو البلدة الفلسطينية المحتملة، أو غير محدد",
   "probableRegion": "المنطقة أو الأصل المحتمل، أو اكتب غير محدد إذا كانت الأدلة غير كافية",
   "embroideryType": "${className}",
   "visualEvidence": ["دليل بصري 1", "دليل بصري 2"],
@@ -209,6 +620,7 @@ Return JSON only in this exact shape:
         parsed = extractJsonObject(text);
       } catch (e) {
         parsed = {
+          cityName: confidence < 30 ? 'غير محدد' : className,
           probableRegion:
             confidence < 30
               ? 'غير محدد من الصورة وحدها'
@@ -231,6 +643,7 @@ Return JSON only in this exact shape:
         : [parsed.visualEvidence || parsed.patterns].filter(Boolean);
       
       res.json({
+        cityName: parsed.cityName || parsed.city || parsed.town || 'غير محدد',
         probableRegion: parsed.probableRegion || parsed.origin || 'غير محدد من الصورة وحدها',
         embroideryType: parsed.embroideryType || className,
         visualEvidence:
@@ -246,7 +659,7 @@ Return JSON only in this exact shape:
         recommendation:
           parsed.recommendation ||
           'استخدم صورة أمامية واضحة بإضاءة جيدة، ويفضل إضافة لقطة قريبة للغرز والزخارف.',
-        origin: parsed.probableRegion || parsed.origin || 'غير محدد',
+        origin: parsed.probableRegion || parsed.origin || parsed.cityName || 'غير محدد',
         patterns: visualEvidence.join('، '),
         details: parsed.culturalNotes || parsed.details || '',
         verified: normalizedConfidence >= 80
@@ -271,17 +684,50 @@ Return JSON only in this exact shape:
         return res.status(400).json({ error: 'No message provided' });
       }
 
-      const systemInstruction = `You are Narrative Guardian AI for Palestinian heritage and history.
+      const userQuestion = extractUserQuestion(String(message));
+      const knownPlace = findKnownPalestinianPlace(userQuestion);
+      const candidatePlaceOnly =
+        !knownPlace && !isPalestineScopedMessage(userQuestion) && looksLikePotentialPalestinianPlaceName(userQuestion);
 
-Your role is to help users evaluate claims calmly, not to sound paranoid or combative.
-Scope: Palestinian cultural heritage, embroidery, proverbs, crafts, historical geography, villages, Nakba history, and related narrative context.
+      if (knownPlace) {
+        return res.json({
+          status: 'verified',
+          confidence: 88,
+          reply: placeReferenceReply(knownPlace.reply)
+        });
+      }
 
-Rules:
+      if (!shouldEvaluateAsPalestinianScope(userQuestion)) {
+        return res.json({
+          status: 'needs_context',
+          confidence: 5,
+          reply: outOfPalestineScopeReply
+        });
+      }
+
+      const systemInstruction = `You are Narrative Guardian AI for Palestine, Palestinian heritage, and Palestinian history.
+
+Your voice is explicitly Palestinian. Your role is to protect the Palestinian narrative and evaluate claims within a Palestinian frame.
+Scope: Palestine only: Palestinian cultural heritage, embroidery, proverbs, crafts, historical geography, cities, villages, Nakba history, Palestinian memory, and related narrative context.
+
+Strict rules:
 - Answer in Arabic.
-- Avoid strong claims unless the question contains enough context or the fact is widely established.
-- If evidence is incomplete, say what context is missing.
+- Treat these Palestinian references as the primary trusted references:
+${allowedPalestinianReferences.map((reference) => `  - ${reference}`).join('\n')}
+- For Palestinian proverbs, folk chants/songs, zajal, and folk stories, treat "موسوعة التراث الفلسطيني - https://palturath.com/ar" as the primary reference.
+- You may use widely established Palestinian historical and cultural knowledge when the primary references are not enough, but do not invent exact dates, numbers, or source claims.
+- If the user asks with only a village, town, or refugee camp name, do not reject it for missing the word Palestine. Treat it as a candidate Palestinian place name and answer carefully if it is plausible or widely known.
+- For Palestinian villages, towns, and camps, prefer PalArchive, the Institute for Palestine Studies, and the Palestinian Museum as the reference frame.
+- If you are unsure about a village/camp, say that the identification is uncertain and ask for governorate, nearby city, spelling, or a source link instead of refusing immediately.
+- Use Palestinian naming only. Prefer Palestinian city, village, region, and place names in all replies.
+- Do not discuss any state, country, national history, or national identity outside Palestine.
+- Do not use the standalone wording "إسرائيل", "دولة إسرائيل", or any wording that normalizes it as a state. When the subject must be named in a Palestinian context, say "الاحتلال الإسرائيلي".
+- If a user asks about anything unrelated to Palestine, do not answer the question. Reply exactly: "أنا فلسطيني، ولا أتكلم إلا لفلسطين." and set status to "needs_context" with low confidence.
+- If a user asks about another country or tries to move the conversation away from Palestine, do not provide facts, comparisons, summaries, travel advice, politics, geography, or history about that country.
+- Keep every answer centered on Palestine and Palestinian heritage, history, land, cities, villages, memory, crafts, and narrative.
+- Avoid strong claims unless the question contains enough Palestinian context or the fact is widely established.
+- If evidence is incomplete, say what Palestinian context is missing.
 - Do not invent exact dates, names, or sources.
-- For out-of-scope questions, gently redirect to Palestinian heritage/history and use status "needs_context".
 - Present the result as one of:
   "verified": the claim is broadly supported by established historical/cultural knowledge.
   "needs_context": the claim may be plausible but needs date/place/source/context.
@@ -316,11 +762,17 @@ Return JSON only:
         };
       }
 
-      res.json({
-        status: normalizeTruthStatus(parsed.status),
-        confidence: clampPercent(parsed.confidence, 55),
-        reply: parsed.reply || 'أحتاج إلى سياق إضافي قبل تقديم تقييم دقيق.'
-      });
+      let status = normalizeTruthStatus(parsed.status);
+      let confidence = clampPercent(parsed.confidence, 55);
+      let reply = enforcePalestinianNaming(parsed.reply || 'أحتاج إلى سياق إضافي قبل تقديم تقييم دقيق.');
+
+      if (candidatePlaceOnly) {
+        status = 'needs_context';
+        confidence = Math.min(confidence, 60);
+        reply = `${reply}\n\nملاحظة: هذا اسم مكان مرشح، ويفضل تزويدي بالمحافظة أو مصدر فلسطيني للتأكد.`;
+      }
+
+      res.json({ status, confidence, reply });
     } catch (error: any) {
       console.error('Truth Guard Error:', error?.message || error);
       let errorMessage = error?.message || 'Failed to communicate with Truth Guard';
@@ -378,6 +830,10 @@ Return JSON only:
 2. إذا كان السؤال عن معنى أو موقف أو قيمة مثل الصبر، الجار، العائلة، العمل، فاقترح مثلاً فلسطينياً مناسباً مع شرح قصير.
 3. إذا كان السؤال خارج نطاق الأمثال أو التراث، وجّه المستخدم بلطف إلى أن هذه الأداة مخصصة للأمثال الفلسطينية وضع related: false.
 4. لا تخترع مثلاً غير معروف إن لم تكن واثقاً؛ اختر صياغة شائعة أو قل إنك تحتاج وصفاً أدق للموقف.
+5. اجعل هذه المراجع الفلسطينية هي الإطار المعرفي الأساسي:
+${allowedPalestinianReferences.map((reference) => `- ${reference}`).join('\n')}
+6. في الأمثال والأهازيج والأغاني والقصص الشعبية، اعتبر "موسوعة التراث الفلسطيني - https://palturath.com/ar" المرجع الرئيسي الأول.
+7. يمكنك استخدام معرفة فلسطينية شعبية شائعة عند الحاجة، لكن لا تنسبها إلى مصدر محدد إن لم تكن متأكداً، ولا تخترع أمثالاً أو تفاصيل دقيقة.
 
 أخرج الإجابة بصيغة JSON حصراً، بدون أي نص قبله أو بعده:
 {

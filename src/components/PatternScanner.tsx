@@ -18,6 +18,7 @@ interface Prediction {
 }
 
 interface ScanResult {
+  cityName: string;
   probableRegion: string;
   embroideryType: string;
   visualEvidence: string[];
@@ -52,6 +53,7 @@ function normalizeResult(data: any, fallbackClassName: string, fallbackConfidenc
     : [data?.visualEvidence || data?.patterns].filter(Boolean);
 
   return {
+    cityName: data?.cityName || data?.city || data?.town || 'غير محدد',
     probableRegion: data?.probableRegion || data?.origin || 'لا يمكن تحديد المنطقة من الصورة وحدها',
     embroideryType: data?.embroideryType || fallbackClassName || 'نمط تطريز غير محدد',
     visualEvidence:
@@ -234,6 +236,11 @@ export default function PatternScanner() {
                 </div>
 
                 <div className="scanner-result__grid">
+                  <div className="scanner-result__item">
+                    <strong>المدينة الفلسطينية المحتملة</strong>
+                    <p>{result.cityName}</p>
+                  </div>
+
                   <div className="scanner-result__item">
                     <strong>الأصل أو المنطقة المحتملة</strong>
                     <p>{result.probableRegion}</p>

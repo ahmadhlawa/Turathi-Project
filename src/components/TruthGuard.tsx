@@ -32,7 +32,7 @@ export default function TruthGuard() {
       id: 'welcome',
       role: 'bot',
       text:
-        'مرحباً، أساعدك على فحص الروايات والمعلومات المرتبطة بالتراث والتاريخ الفلسطيني بلغة هادئة. سأوضح إن كانت المعلومة موثقة، تحتاج سياقاً، أو قد تكون غير دقيقة.'
+        'أنا فلسطيني، ولا أتكلم إلا لفلسطين. أساعدك على فحص الروايات والمعلومات المرتبطة بالتراث والتاريخ الفلسطيني، وبالمسميات الفلسطينية فقط.'
     }
   ]);
   const [input, setInput] = useState('');
@@ -113,8 +113,8 @@ export default function TruthGuard() {
           حارس السردية
         </>
       }
-      title="Narrative Guardian AI"
-      subtitle="مساعد تحقق هادئ يوازن بين المعلومة والسياق، ويعرض مستوى الثقة دون ادعاءات قاطعة."
+      title="حارس السردية الفلسطينية"
+      subtitle="مساعد تحقق يلتزم بفلسطين وتراثها ومدنها وقراها، ويستخدم المسميات الفلسطينية فقط."
     >
       <div className="truth-panel ui-card">
         <div ref={messagesContainerRef} className="truth-messages">
