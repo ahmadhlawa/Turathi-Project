@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   Library,
   Loader2,
+  MapPinned,
   Menu,
   MessageSquareText,
   Mic,
@@ -21,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { publicAsset } from '../lib/assets';
 import { cn } from './ui';
 
@@ -134,6 +136,11 @@ const tools: Array<{
 ];
 
 const toolById = Object.fromEntries(tools.map((tool) => [tool.id, tool])) as Record<ToolId, (typeof tools)[number]>;
+const toolIds = tools.map((tool) => tool.id) as ToolId[];
+
+function resolveToolId(value: string | null): ToolId {
+  return toolIds.includes(value as ToolId) ? (value as ToolId) : 'guardian';
+}
 
 const scopedPrompts: Record<ToolId, string> = {
   guardian: 'ضمن حارس السردية الفلسطينية، أجب عن: ',
@@ -252,7 +259,8 @@ function loadImageElement(src: string) {
 }
 
 export default function TurathiChatApp() {
-  const [activeTool, setActiveTool] = useState<ToolId>('guardian');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTool, setActiveTool] = useState<ToolId>(() => resolveToolId(searchParams.get('tool')));
   const [threads, setThreads] = useState<Record<ToolId, ChatMessage[]>>(() => createEmptyThreads());
   const [input, setInput] = useState('');
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -270,6 +278,11 @@ export default function TurathiChatApp() {
     return <Icon size={18} aria-hidden="true" />;
   }, [activeConfig]);
   const ActiveEmptyIcon = activeConfig.icon;
+
+  useEffect(() => {
+    const requestedTool = resolveToolId(searchParams.get('tool'));
+    setActiveTool((currentTool) => (currentTool === requestedTool ? currentTool : requestedTool));
+  }, [searchParams]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -300,6 +313,7 @@ export default function TurathiChatApp() {
 
   const selectTool = (toolId: ToolId) => {
     setActiveTool(toolId);
+    setSearchParams(toolId === 'guardian' ? {} : { tool: toolId }, { replace: true });
     setInput('');
     setPendingImage(null);
     setSidebarOpen(false);
@@ -594,6 +608,10 @@ export default function TurathiChatApp() {
                 </button>
               );
             })}
+            <Link to="/map" className="ai-tool-button" onClick={() => setSidebarOpen(false)}>
+              <MapPinned size={19} aria-hidden="true" />
+              <span>الخريطة التاريخية</span>
+            </Link>
           </nav>
         </div>
 

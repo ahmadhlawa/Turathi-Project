@@ -18,6 +18,64 @@ const allowedPalestinianReferences = [
   'Palestine Poster Project Archives - https://www.palestineposterproject.org/'
 ];
 
+const defaultPalOpenMapUrl =
+  'https://palopenmaps.org/ar/maps/jerusalem?basemap=pal20k1940&overlay=pal1940&color=status&toggles=places|year|split#14.00,35.2322,31.7778';
+
+function normalizePalOpenMapUrl(value: unknown) {
+  const candidate = typeof value === 'string' && value.trim() ? value.trim() : defaultPalOpenMapUrl;
+
+  try {
+    const url = new URL(candidate);
+    const isAllowedHost = url.hostname === 'palopenmaps.org';
+    const isAllowedPath = url.pathname.startsWith('/ar/maps/') || url.pathname.startsWith('/maps/');
+
+    if (url.protocol !== 'https:' || !isAllowedHost || !isAllowedPath) {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+async function checkPalOpenMapAvailability(targetUrl: string, signal: AbortSignal) {
+  const headers = {
+    'user-agent': 'Turathi-Project map availability check'
+  };
+
+  let response = await fetch(targetUrl, {
+    method: 'HEAD',
+    redirect: 'follow',
+    signal,
+    headers
+  });
+
+  if ([403, 405, 501].includes(response.status)) {
+    response = await fetch(targetUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal,
+      headers
+    });
+  }
+
+  return response.ok;
+}
+
+function withTimeout<T>(task: Promise<T>, timeoutMs: number, onTimeout: () => void) {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      onTimeout();
+      reject(new Error('Request timed out'));
+    }, timeoutMs);
+
+    task
+      .then(resolve, reject)
+      .finally(() => clearTimeout(timeout));
+  });
+}
+
 const knownPalestinianPlaces = [
   {
     names: ['الدهيشة', 'مخيم الدهيشة'],
@@ -549,6 +607,30 @@ async function startServer() {
         length: geminiKey ? geminiKey.length : 0
       }
     });
+  });
+
+  app.get('/api/map-status', async (req, res) => {
+    const requestedUrl = Array.isArray(req.query.url) ? req.query.url[0] : req.query.url;
+    const targetUrl = normalizePalOpenMapUrl(requestedUrl);
+
+    res.setHeader('Cache-Control', 'no-store');
+
+    if (!targetUrl) {
+      return res.status(400).json({ available: false });
+    }
+
+    const controller = new AbortController();
+    try {
+      const available = await withTimeout(
+        checkPalOpenMapAvailability(targetUrl, controller.signal),
+        3500,
+        () => controller.abort()
+      );
+      res.json({ available });
+    } catch (error: any) {
+      console.warn('PalOpenMaps availability check failed:', error?.message || error);
+      res.json({ available: false });
+    }
   });
 
   app.post('/api/scan-pattern', async (req, res) => {
