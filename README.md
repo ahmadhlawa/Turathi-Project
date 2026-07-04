@@ -14,6 +14,20 @@ AI and machine learning are appropriate here because the product concept combine
 
 > This repository is a PoC, not a production-ready system. Its goal is to validate feasibility, user experience, and technical direction.
 
+## Live Demo
+
+**Project Website**
+
+Primary public application for exploring the Turathi AI cultural heritage assistant.
+
+https://turathi-project.onrender.com/
+
+**Presentation / AI Demo**
+
+Interactive AI/ML Proof of Concept presentation demonstrating the project's concept, workflow, and capabilities.
+
+https://service-488923514554.us-west1.run.app
+
 ## Project Vision
 
 Build an AI platform that helps Palestinian cultural organizations and digital heritage teams preserve, explain, and validate cultural knowledge through accessible tools rather than manual research alone.
@@ -48,7 +62,6 @@ Implemented scope:
 - tool modes for narrative guarding, pattern analysis, proverbs, stories, songs, and sources.
 - image upload validation and Teachable Machine inference for pattern classification.
 - Express API endpoints for AI text generation, pattern explanation, truth-guard responses, proverb assistance, and map status checks.
-- local heritage and proverb data files used by the UI.
 - PalOpenMaps embed for historical map exploration.
 
 Out of scope for this PoC:
@@ -85,7 +98,7 @@ The ML model used for image recognition is an externally hosted Google Teachable
 
 The language layer uses Google Gemini by default through `GEMINI_API_KEY`, with optional Groq fallback through `GROQ_API_KEY`. The default Gemini model is `gemini-2.5-flash` unless overridden with `GEMINI_MODEL`.
 
-The dataset inside the repository is lightweight and PoC-oriented: local TypeScript data files contain heritage examples and Palestinian proverbs. The training dataset for the external Teachable Machine model is not included in this repository.
+The repository does not include a local ML training dataset. The image recognition step depends on an externally hosted Teachable Machine model, and the training data for that model is not versioned here.
 
 ## Machine Learning Pipeline
 
@@ -132,7 +145,7 @@ To evolve this PoC into a production-grade AI platform, the next step would be a
 - AI responses can be incomplete or inaccurate and require expert review.
 - The external Teachable Machine model and its training data are not versioned in this repository.
 - The PoC does not include formal accuracy, bias, or safety evaluations.
-- Several standalone page components exist, but only `/` and `/map` are currently wired in `App.tsx`.
+- The PoC currently exposes only `/` and `/map` routes.
 - No production database, authentication, logging, or moderation system is included.
 
 ## Getting Started
